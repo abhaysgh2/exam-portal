@@ -45,8 +45,10 @@ class DemoSeeder extends Seeder
                 'end_time' => now()->addHour(),
                 'status' => 'live',
                 'instructions' => 'Answer all questions. Negative marking applies.',
+                'show_results_after' => 'submit',
             ],
         );
+        $exam->forceFill(['show_results_after' => 'submit'])->save();
 
         $section = Section::firstOrCreate(
             ['exam_id' => $exam->id, 'title' => 'General Aptitude'],

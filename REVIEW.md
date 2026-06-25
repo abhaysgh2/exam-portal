@@ -10,6 +10,9 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Fixed: only the session owner can save answers or submit a session. Examiner/admin users can still inspect through read endpoints but cannot mutate a candidate attempt.
 - [x] Fixed: submitted, disqualified, or expired sessions reject answer saves.
 - [x] Fixed: resumed sessions return questions using the stored `question_order`.
+- [x] Fixed: final submit returns either a hidden-result submitted message or an instant-result payload based on the exam setting.
+- [x] Added examiner/admin instant-result toggle endpoint with answer-key validation.
+- [x] Added publishing guard so instant-result exams cannot publish until objective answer keys exist.
 - [x] Added regression tests for pre-session question exposure, cross-exam answer injection, examiner mutation attempts, and expired answer saves.
 
 ## Security Checklist
@@ -20,6 +23,8 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Students cannot answer questions from another exam.
 - [x] Students cannot save answers after session expiry.
 - [x] Non-owner users cannot save or submit a student session.
+- [x] Instant-result enablement rejects exams without answer keys using `please first upload the answers`.
+- [x] Descriptive questions are blocked from instant-result enablement because they require manual grading.
 - [ ] Move browser auth from bearer tokens in localStorage to secure HTTP-only cookies before production.
 - [ ] Add rate limiting to login, register, answer save, and proctoring flag endpoints.
 - [ ] Add audit logging for admin user changes, exam publish/release actions, grading actions, and disqualification actions.
@@ -32,6 +37,8 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Registered student can start a live session.
 - [x] Session answer save validates that option IDs belong to the requested question.
 - [x] Session submit grades through `GradingService`.
+- [x] Session submit hides result when `show_results_after` is `manual_release`.
+- [x] Session submit returns result details when `show_results_after` is `submit`.
 - [ ] Add tests for MCQ correct/wrong scoring.
 - [ ] Add tests for multi-correct scoring.
 - [ ] Add tests for NAT tolerance scoring.
@@ -47,6 +54,8 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] `/api/v1/exams` returns paginated exam list.
 - [x] `/api/v1/sessions/start` returns session id, ordered questions, sections, timer, and server time.
 - [x] `/api/v1/sessions/{session}/answer` accepts MCQ, multi-correct, NAT, and descriptive answer payloads.
+- [x] `/api/v1/sessions/{session}/submit` returns submit status, result visibility, user-facing message, and result data only when visible.
+- [x] `/api/v1/exams/{exam}/instant-results` toggles instant result visibility for examiner/admin users.
 - [ ] Add dedicated response resources/DTOs so API output does not depend on raw Eloquent serialization.
 - [ ] Add OpenAPI documentation or a checked-in API contract for frontend/backend alignment.
 - [ ] Standardize error response bodies for `403`, `409`, and `422` cases.
@@ -55,7 +64,7 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ```bash
 vendor/bin/phpunit
-vendor/bin/pint --test app/Http/Controllers/Api/ExamController.php app/Http/Controllers/Api/SessionController.php app/Services/ExamTimerService.php tests/Feature/SecurityExposureTest.php
+vendor/bin/pint --test app/Http/Controllers/Api/ExamController.php app/Http/Controllers/Api/SessionController.php app/Models/Result.php database/migrations/2026_06_25_000002_create_exams_table.php database/seeders/DemoSeeder.php tests/Feature/ExamLifecycleTest.php routes/api.php
 ```
 
 ## Next Recommended Work

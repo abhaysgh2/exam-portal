@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('exams', function (Blueprint $table): void {
@@ -24,7 +25,7 @@ return new class extends Migration {
             $table->boolean('randomize_questions')->default(true);
             $table->boolean('randomize_options')->default(true);
             $table->boolean('allow_review')->default(true);
-            $table->string('show_results_after', 20)->default('submit');
+            $table->string('show_results_after', 20)->default('manual_release');
             $table->timestampTz('results_release_at')->nullable();
             $table->timestampsTz();
         });

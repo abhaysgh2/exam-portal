@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('role:examiner,admin')->group(function (): void {
             Route::post('exams', [ExamController::class, 'store']);
             Route::put('exams/{exam}', [ExamController::class, 'update']);
+            Route::patch('exams/{exam}/instant-results', [ExamController::class, 'updateInstantResults']);
             Route::get('exams/{exam}/stats', [ExamController::class, 'stats']);
             Route::get('exams/{exam}/registrations', [ExamController::class, 'registrations']);
             Route::get('exams/{exam}/results', [ExamController::class, 'results']);

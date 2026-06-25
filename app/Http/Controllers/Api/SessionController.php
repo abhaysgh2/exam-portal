@@ -120,9 +120,19 @@ class SessionController extends Controller
             'status' => 'submitted',
         ]);
 
-        $result = $this->grading->gradeSession($session->fresh());
+        $session = $session->fresh('exam');
+        $result = $this->grading->gradeSession($session);
+        $resultVisible = $session->exam->show_results_after === 'submit';
 
-        return response()->json(['submitted' => true, 'result_id' => $result->id]);
+        return response()->json([
+            'submitted' => true,
+            'result_id' => $result->id,
+            'result_visible' => $resultVisible,
+            'message' => $resultVisible
+                ? 'Your result is ready.'
+                : 'Your test is submitted and will be evaluated. You can exit the test.',
+            'result' => $resultVisible ? $result : null,
+        ]);
     }
 
     public function summary(Request $request, ExamSession $session)

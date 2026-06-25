@@ -42,9 +42,34 @@ class ExamController extends Controller
     {
         abort_if($exam->status !== 'draft', 409, 'Only draft exams can be edited.');
 
-        $exam->update($this->validatedExam($request, partial: true));
+        $data = $this->validatedExam($request, partial: true);
+        $this->ensureInstantResultsAreReady($exam, $data);
+
+        $exam->update($data);
 
         return response()->json($exam->fresh());
+    }
+
+    public function updateInstantResults(Request $request, Exam $exam)
+    {
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        if ($data['enabled']) {
+            abort_unless($this->hasObjectiveAnswerKeys($exam), 422, 'please first upload the answers');
+        }
+
+        $exam->update([
+            'show_results_after' => $data['enabled'] ? 'submit' : 'manual_release',
+            'results_release_at' => $data['enabled'] ? null : $exam->results_release_at,
+        ]);
+
+        return response()->json([
+            'exam' => $exam->fresh(),
+            'instant_results_enabled' => $data['enabled'],
+            'message' => $data['enabled'] ? 'Instant results enabled.' : 'Instant results disabled.',
+        ]);
     }
 
     public function destroy(Exam $exam)
@@ -58,6 +83,7 @@ class ExamController extends Controller
     public function publish(Exam $exam)
     {
         abort_if($exam->questions()->count() === 0, 422, 'Add questions before publishing.');
+        abort_if($exam->show_results_after === 'submit' && ! $this->hasObjectiveAnswerKeys($exam), 422, 'please first upload the answers');
 
         $exam->update(['status' => 'scheduled']);
 
@@ -148,5 +174,30 @@ class ExamController extends Controller
             'show_results_after' => ['nullable', Rule::in(['submit', 'manual_release', 'schedule'])],
             'results_release_at' => ['nullable', 'date'],
         ]);
+    }
+
+    private function ensureInstantResultsAreReady(Exam $exam, array $data): void
+    {
+        if (($data['show_results_after'] ?? null) === 'submit') {
+            abort_unless($this->hasObjectiveAnswerKeys($exam), 422, 'please first upload the answers');
+        }
+    }
+
+    private function hasObjectiveAnswerKeys(Exam $exam): bool
+    {
+        $questions = $exam->questions()->with('options', 'natAnswer')->get();
+
+        if ($questions->isEmpty()) {
+            return false;
+        }
+
+        return $questions->every(function ($question): bool {
+            return match ($question->type) {
+                'mcq', 'multi_correct' => $question->options->contains('is_correct', true),
+                'nat' => $question->natAnswer !== null,
+                'descriptive' => false,
+                default => false,
+            };
+        });
     }
 }

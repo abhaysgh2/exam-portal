@@ -9,7 +9,7 @@ class Result extends Model
 {
     use HasUuids;
 
-    public const UPDATED_AT = null;
+    public $timestamps = false;
 
     protected $fillable = [
         'session_id',
