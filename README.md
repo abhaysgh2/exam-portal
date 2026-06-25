@@ -13,16 +13,21 @@ Laravel 13 API backend for an enterprise online exam portal based on the provide
 
 ## Quick Local Setup
 
+From the project root:
+
 ```bash
+cd "/Users/abhaysingh/Desktop/exam portal"
 make setup-sqlite
 make test
 make serve
 ```
 
-If PHP, Composer, or Make are missing, run:
+On a fresh machine where PHP, Composer, or Make may be missing:
 
 ```bash
+cd "/Users/abhaysingh/Desktop/exam portal"
 make bootstrap
+make serve
 ```
 
 `make bootstrap` installs supported system tools, configures SQLite, installs Composer dependencies, migrates/seeds the database, and runs tests.
