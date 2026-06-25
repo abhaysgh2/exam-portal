@@ -29,8 +29,12 @@ class ExamController extends Controller
         return response()->json(Exam::create($data), 201);
     }
 
-    public function show(Exam $exam)
+    public function show(Request $request, Exam $exam)
     {
+        if ($request->user()->role === 'student') {
+            return response()->json($exam->load('sections'));
+        }
+
         return response()->json($exam->load('sections', 'questions.options'));
     }
 

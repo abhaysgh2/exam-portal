@@ -11,12 +11,11 @@ use App\Models\Question;
 use App\Services\ExamTimerService;
 use App\Services\GradingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class SessionController extends Controller
 {
-    public function __construct(private ExamTimerService $timer, private GradingService $grading)
-    {
-    }
+    public function __construct(private ExamTimerService $timer, private GradingService $grading) {}
 
     public function start(Request $request)
     {
@@ -41,9 +40,12 @@ class SessionController extends Controller
             ],
         );
 
+        abort_if($session->submitted_at || $session->status !== 'in_progress', 409, 'Session is already closed.');
+        abort_if($this->timer->remainingSeconds($session) <= 0, 409, 'Session time has expired.');
+
         return response()->json([
             'session_id' => $session->id,
-            'questions' => $questions->values(),
+            'questions' => $this->orderedQuestions($questions, $session->question_order ?? $order),
             'sections' => $exam->sections,
             'time_remaining_sec' => $this->timer->remainingSeconds($session),
             'server_time' => now(),
@@ -62,8 +64,8 @@ class SessionController extends Controller
 
     public function answer(Request $request, ExamSession $session)
     {
-        $this->authorizeSession($request, $session);
-        abort_if($session->submitted_at, 409, 'Session has already been submitted.');
+        $this->authorizeWritableSession($request, $session);
+        $this->ensureSessionCanAcceptAnswers($session);
 
         $data = $request->validate([
             'question_id' => ['required', 'uuid', 'exists:questions,id'],
@@ -109,7 +111,8 @@ class SessionController extends Controller
 
     public function submit(Request $request, ExamSession $session)
     {
-        $this->authorizeSession($request, $session);
+        $this->authorizeWritableSession($request, $session);
+        abort_if($session->submitted_at || $session->status !== 'in_progress', 409, 'Session is already closed.');
 
         $session->update([
             'submitted_at' => now(),
@@ -137,5 +140,25 @@ class SessionController extends Controller
     private function authorizeSession(Request $request, ExamSession $session): void
     {
         abort_unless($request->user()->role !== 'student' || $session->user_id === $request->user()->id, 403);
+    }
+
+    private function authorizeWritableSession(Request $request, ExamSession $session): void
+    {
+        abort_unless($session->user_id === $request->user()->id, 403);
+    }
+
+    private function ensureSessionCanAcceptAnswers(ExamSession $session): void
+    {
+        abort_if($session->submitted_at || $session->status !== 'in_progress', 409, 'Session is already closed.');
+        abort_if($this->timer->remainingSeconds($session) <= 0, 409, 'Session time has expired.');
+    }
+
+    private function orderedQuestions(Collection $questions, array $order): Collection
+    {
+        $positions = array_flip($order);
+
+        return $questions
+            ->sortBy(fn (Question $question) => $positions[$question->id] ?? PHP_INT_MAX)
+            ->values();
     }
 }

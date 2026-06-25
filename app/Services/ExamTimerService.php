@@ -13,7 +13,7 @@ class ExamTimerService
         }
 
         $duration = $session->exam->duration_minutes * 60;
-        $elapsed = now()->diffInSeconds($session->started_at);
+        $elapsed = $session->started_at->diffInSeconds(now());
 
         return max(0, $duration - $elapsed);
     }

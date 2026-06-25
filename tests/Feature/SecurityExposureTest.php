@@ -27,7 +27,7 @@ class SecurityExposureTest extends TestCase
         $this->assertDatabaseMissing('users', ['email' => 'candidate@example.com', 'role' => 'admin']);
     }
 
-    public function test_exam_details_do_not_expose_correct_options(): void
+    public function test_student_exam_details_do_not_expose_question_content_before_session_start(): void
     {
         $student = User::factory()->create(['role' => 'student']);
         $exam = Exam::create([
@@ -47,7 +47,7 @@ class SecurityExposureTest extends TestCase
         $this->actingAs($student)
             ->getJson("/api/v1/exams/{$exam->id}")
             ->assertOk()
-            ->assertJsonMissingPath('questions.0.options.0.is_correct');
+            ->assertJsonMissingPath('questions');
     }
 
     public function test_answer_cannot_reference_question_from_another_exam(): void
@@ -83,5 +83,72 @@ class SecurityExposureTest extends TestCase
         $this->actingAs($student)
             ->patchJson("/api/v1/sessions/{$session->id}/answer", ['question_id' => $otherQuestion->id])
             ->assertNotFound();
+    }
+
+    public function test_examiner_cannot_save_or_submit_student_session_answers(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        $exam = Exam::create([
+            'title' => 'Protected Session Exam',
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'live',
+        ]);
+        $question = Question::create([
+            'exam_id' => $exam->id,
+            'type' => 'mcq',
+            'text' => 'Private answer',
+            'marks' => 1,
+        ]);
+        $option = Option::create(['question_id' => $question->id, 'text' => 'A', 'is_correct' => true, 'order_index' => 1]);
+        $session = ExamSession::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'started_at' => now(),
+            'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($examiner)
+            ->patchJson("/api/v1/sessions/{$session->id}/answer", [
+                'question_id' => $question->id,
+                'selected_option_id' => $option->id,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($examiner)
+            ->postJson("/api/v1/sessions/{$session->id}/submit")
+            ->assertForbidden();
+    }
+
+    public function test_expired_session_cannot_accept_answers(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $exam = Exam::create([
+            'title' => 'Expired Session Exam',
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'live',
+        ]);
+        $question = Question::create([
+            'exam_id' => $exam->id,
+            'type' => 'mcq',
+            'text' => 'Too late',
+            'marks' => 1,
+        ]);
+        $option = Option::create(['question_id' => $question->id, 'text' => 'A', 'is_correct' => true, 'order_index' => 1]);
+        $session = ExamSession::create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'started_at' => now()->subMinutes(31),
+            'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($student)
+            ->patchJson("/api/v1/sessions/{$session->id}/answer", [
+                'question_id' => $question->id,
+                'selected_option_id' => $option->id,
+            ])
+            ->assertStatus(409);
     }
 }
