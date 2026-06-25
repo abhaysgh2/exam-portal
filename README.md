@@ -12,15 +12,14 @@ Laravel 13 API backend skeleton for an enterprise online exam portal based on th
 ## Setup Once PHP And Composer Are Installed
 
 ```bash
-composer create-project laravel/laravel:^13.0 .
-composer require laravel/sanctum predis/predis
-php artisan vendor:publish --provider="Laravel\\Sanctum\\SanctumServiceProvider"
-php artisan migrate
-php artisan db:seed --class=DemoSeeder
-php artisan serve
+make doctor
+make setup
+make serve
 ```
 
 If you create a fresh Laravel app, copy the `app`, `routes`, `database`, `config`, `bootstrap`, `tests`, and `docs` folders from this repository into it.
+
+For detailed local setup steps, see `docs/LOCAL_DEVELOPMENT.md`.
 
 ## Main API Areas
 
