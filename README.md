@@ -1,25 +1,53 @@
 # Exam Portal Backend
 
-Laravel 13 API backend skeleton for an enterprise online exam portal based on the provided ExamFlow documentation.
+Laravel 13 API backend for an enterprise online exam portal based on the provided ExamFlow documentation.
 
 ## Current Status
 
 - Documentation and implementation checklist: `docs/FEATURES_AND_STEPS.md`
 - Backend framework target: Laravel 13.x
-- Local scaffold status: source code, routes, migrations, models, controllers, middleware, seeders, and tests are drafted
-- Dependency install status: pending because `php`, `composer`, and `laravel` are not available in the current shell
+- Local app status: runnable backend API with routes, migrations, models, controllers, middleware, seeders, tests, and local setup commands
+- Verified locally with PHP 8.5.7, Composer 2.10.1, SQLite, and PHPUnit
+- Current test status: `make test` passes with 6 tests and 14 assertions
+- Frontend status: not built yet; this repository is backend/API only
 
-## Setup Once PHP And Composer Are Installed
+## Quick Local Setup
 
 ```bash
-make doctor
-make setup
+make setup-sqlite
+make test
 make serve
 ```
 
-If you create a fresh Laravel app, copy the `app`, `routes`, `database`, `config`, `bootstrap`, `tests`, and `docs` folders from this repository into it.
+If PHP, Composer, or Make are missing, run:
+
+```bash
+make bootstrap
+```
+
+`make bootstrap` installs supported system tools, configures SQLite, installs Composer dependencies, migrates/seeds the database, and runs tests.
 
 For detailed local setup steps, see `docs/LOCAL_DEVELOPMENT.md`.
+
+## Local URLs
+
+- Backend status: `http://127.0.0.1:8000/`
+- Health check: `http://127.0.0.1:8000/health`
+- API base: `http://127.0.0.1:8000/api/v1`
+
+## Demo Users
+
+After seeding local demo data:
+
+- `admin@example.com`
+- `examiner@example.com`
+- `student@example.com`
+
+Demo password:
+
+```text
+password123
+```
 
 ## Main API Areas
 
@@ -36,6 +64,25 @@ For detailed local setup steps, see `docs/LOCAL_DEVELOPMENT.md`.
 - `POST /api/v1/proctoring/flag`
 - `GET /api/v1/grading/queue`
 - `GET /api/v1/analytics/exams/{exam}/overview`
+
+## Useful Commands
+
+```bash
+make help
+make platform
+make doctor
+make setup-sqlite
+make serve
+make test
+make routes
+```
+
+## Documentation
+
+- Feature checklist: `docs/FEATURES_AND_STEPS.md`
+- Local setup: `docs/LOCAL_DEVELOPMENT.md`
+- AWS deployment plan: `docs/AWS_DEPLOYMENT_AND_TEST_COVERAGE.md`
+- Security and scenario audit: `docs/SECURITY_AND_SCENARIO_AUDIT.md`
 
 ## Notes
 
