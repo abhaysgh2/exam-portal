@@ -13,6 +13,8 @@ class Option extends Model
 
     protected $fillable = ['question_id', 'text', 'image_url', 'is_correct', 'order_index'];
 
+    protected $hidden = ['is_correct'];
+
     protected function casts(): array
     {
         return ['is_correct' => 'boolean'];

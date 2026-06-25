@@ -29,6 +29,8 @@ class Question extends Model
         'created_by',
     ];
 
+    protected $hidden = ['explanation'];
+
     protected function casts(): array
     {
         return [

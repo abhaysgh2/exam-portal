@@ -15,6 +15,8 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        abort_if(app()->environment('production'), 403, 'DemoSeeder must not run in production.');
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             ['password' => 'password123', 'full_name' => 'Admin User', 'role' => 'admin'],
@@ -89,6 +91,6 @@ class DemoSeeder extends Seeder
             ['status' => 'registered', 'registered_at' => now()],
         );
 
-        $this->command?->info('Demo users: admin@example.com, examiner@example.com, student@example.com / password123');
+        $this->command?->info('Demo users seeded for local development only.');
     }
 }

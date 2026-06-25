@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Answer;
 use App\Models\Exam;
 use App\Models\ExamSession;
+use App\Models\Option;
+use App\Models\Question;
 use App\Services\ExamTimerService;
 use App\Services\GradingService;
 use Illuminate\Http\Request;
@@ -74,6 +76,26 @@ class SessionController extends Controller
             'visited' => ['boolean'],
             'time_spent_sec' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $question = Question::whereKey($data['question_id'])
+            ->where('exam_id', $session->exam_id)
+            ->firstOrFail();
+
+        if (! empty($data['selected_option_id'])) {
+            abort_unless(
+                Option::whereKey($data['selected_option_id'])->where('question_id', $question->id)->exists(),
+                422,
+                'Selected option does not belong to this question.',
+            );
+        }
+
+        if (! empty($data['selected_option_ids'])) {
+            $validOptionCount = Option::where('question_id', $question->id)
+                ->whereIn('id', $data['selected_option_ids'])
+                ->count();
+
+            abort_unless($validOptionCount === count($data['selected_option_ids']), 422, 'One or more selected options do not belong to this question.');
+        }
 
         $answer = Answer::updateOrCreate(
             ['session_id' => $session->id, 'question_id' => $data['question_id']],

@@ -13,6 +13,8 @@ class NatAnswer extends Model
 
     protected $fillable = ['question_id', 'correct_value', 'tolerance'];
 
+    protected $hidden = ['correct_value', 'tolerance'];
+
     protected function casts(): array
     {
         return [

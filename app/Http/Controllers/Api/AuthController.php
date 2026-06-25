@@ -17,10 +17,12 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'full_name' => ['required', 'string', 'max:255'],
-            'role' => ['required', Rule::in(['student', 'examiner', 'admin'])],
+            'role' => ['nullable', Rule::in(['student'])],
             'enrollment_no' => ['nullable', 'string', 'max:50', 'unique:users,enrollment_no'],
             'institute' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $data['role'] = 'student';
 
         $user = User::create($data);
 
