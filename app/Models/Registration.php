@@ -10,7 +10,7 @@ class Registration extends Model
 {
     use HasUuids;
 
-    public const UPDATED_AT = null;
+    public $timestamps = false;
 
     protected $fillable = ['exam_id', 'user_id', 'registered_at', 'seat_number', 'status'];
 

@@ -121,7 +121,7 @@ flowchart TD
 - [ ] Run `composer install`.
 - [ ] Create `.env` from `.env.example`.
 - [ ] Run `php artisan key:generate`.
-- [ ] Run `php artisan test`.
+- [x] Run `vendor/bin/phpunit`.
 - [ ] Add Dockerfile for Laravel PHP-FPM or Laravel Octane.
 - [ ] Add Nginx config if using PHP-FPM.
 - [ ] Add health endpoints: `/health/live` and `/health/ready`.
@@ -413,7 +413,7 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate:fresh --seed
-php artisan test
+vendor/bin/phpunit
 vendor/bin/pint --test
 ```
 

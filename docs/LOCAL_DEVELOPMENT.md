@@ -128,6 +128,8 @@ The seeder is guarded so it refuses to run in production.
 make test
 ```
 
+This runs `vendor/bin/phpunit`.
+
 Current test files:
 
 - `tests/Feature/ExamLifecycleTest.php`

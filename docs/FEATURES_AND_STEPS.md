@@ -152,7 +152,7 @@ This keeps the first implementation understandable while preserving clean bounda
 - [ ] Configure PostgreSQL database in `.env`.
 - [ ] Run `php artisan migrate`.
 - [ ] Run `php artisan db:seed --class=DemoSeeder`.
-- [ ] Run `php artisan test`.
+- [x] Run `vendor/bin/phpunit`.
 - [ ] Start API with `php artisan serve`.
 
 ### Remaining Product Work

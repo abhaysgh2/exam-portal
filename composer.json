@@ -5,12 +5,13 @@
   "require": {
     "php": "^8.3",
     "laravel/framework": "^13.0",
-    "laravel/sanctum": "^5.0",
+    "laravel/sanctum": "^4.0",
     "predis/predis": "^3.0"
   },
   "require-dev": {
     "fakerphp/faker": "^1.24",
     "laravel/pint": "^1.25",
+    "mockery/mockery": "^1.6",
     "phpunit/phpunit": "^12.0"
   },
   "autoload": {
@@ -21,6 +22,7 @@
   },
   "autoload-dev": {
     "psr-4": {
+      "Database\\Factories\\": "database/factories/",
       "Tests\\": "tests/"
     }
   },

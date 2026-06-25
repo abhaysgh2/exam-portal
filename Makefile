@@ -59,7 +59,7 @@ serve:
 	$(ARTISAN) serve --host=$(HOST) --port=$(PORT)
 
 test:
-	$(ARTISAN) test
+	vendor/bin/phpunit
 
 lint:
 	vendor/bin/pint --test
