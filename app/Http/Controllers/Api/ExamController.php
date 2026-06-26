@@ -17,6 +17,10 @@ class ExamController extends Controller
     public function index(Request $request)
     {
         $exams = Exam::query()
+            ->with('groups:id,name')
+            ->when($request->user()->role === 'student', function ($query) use ($request): void {
+                $query->whereHas('registrations', fn ($registrations) => $registrations->where('user_id', $request->user()->id));
+            })
             ->when($request->string('status')->toString(), fn ($query, $status) => $query->where('status', $status))
             ->when($request->string('category')->toString(), fn ($query, $category) => $query->where('category', $category))
             ->latest()
@@ -80,6 +84,7 @@ class ExamController extends Controller
 
     public function update(Request $request, Exam $exam)
     {
+        $this->authorizeExamManagement($request, $exam);
         abort_if($exam->status !== 'draft', 409, 'Only draft exams can be edited.');
 
         $data = $this->validatedExam($request, partial: true);
@@ -92,6 +97,8 @@ class ExamController extends Controller
 
     public function updateInstantResults(Request $request, Exam $exam)
     {
+        $this->authorizeExamManagement($request, $exam);
+
         $data = $request->validate([
             'enabled' => ['required', 'boolean'],
         ]);
@@ -112,16 +119,18 @@ class ExamController extends Controller
         ]);
     }
 
-    public function destroy(Exam $exam)
+    public function destroy(Request $request, Exam $exam)
     {
+        abort_unless($request->user()->role === 'admin', 403);
         abort_if($exam->status === 'live', 409, 'Live exams cannot be deleted.');
         $exam->delete();
 
         return response()->noContent();
     }
 
-    public function publish(Exam $exam)
+    public function publish(Request $request, Exam $exam)
     {
+        $this->authorizeExamManagement($request, $exam);
         abort_if($exam->questions()->count() === 0, 422, 'Add questions before publishing.');
         abort_if($exam->show_results_after === 'submit' && ! $this->hasObjectiveAnswerKeys($exam), 422, 'please first upload the answers');
 
@@ -216,6 +225,11 @@ class ExamController extends Controller
             'show_results_after' => ['nullable', Rule::in(['submit', 'manual_release', 'schedule'])],
             'results_release_at' => ['nullable', 'date'],
         ]);
+    }
+
+    private function authorizeExamManagement(Request $request, Exam $exam): void
+    {
+        abort_unless($request->user()->role === 'admin' || $exam->created_by === $request->user()->id, 403);
     }
 
     private function validatedStarterQuestion(Request $request): ?array

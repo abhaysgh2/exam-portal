@@ -29,7 +29,10 @@ Backend target confirmed: Laravel `13.x` official documentation at <https://lara
 
 - [x] Exam lifecycle captured: draft, scheduled, live, completed, archived.
 - [x] Exam CRUD endpoints drafted for examiner/admin.
-- [x] Admin-only publish/delete/release routes drafted.
+- [x] Admin can edit/delete any non-live test.
+- [x] Examiner can edit/publish/toggle instant results only for tests they created.
+- [x] Admin-only result release routes drafted.
+- [x] Test groups added so tests and students can be assigned together.
 - [x] Registration and withdrawal endpoints drafted.
 - [ ] Add section CRUD endpoints.
 - [ ] Add question CRUD and bulk CSV/JSON import.
@@ -142,6 +145,28 @@ This keeps the first implementation understandable while preserving clean bounda
 - [x] Added feature checklist and continuation ledger.
 - [x] Added API routes matching the documentation's main flows.
 - [x] Added core models, migrations, controllers, services, middleware, seeder, and feature tests.
+- [x] Added `/api/v1/exam-groups` endpoints.
+- [x] Added group-to-test and group-to-student assignment endpoints.
+- [x] Added automatic student registration when a student is added to a group with tests.
+- [x] Added automatic student registration when a test is added to a group with students.
+- [x] Added ownership guards so examiners cannot edit another examiner's test.
+- [x] Verified backend with 24 PHPUnit tests and 78 assertions.
+
+## Admin, Examiner, And Group Workflow Memory
+
+- [x] Admin can create tests through `POST /api/v1/exams`.
+- [x] Admin can edit any draft test through `PUT /api/v1/exams/{exam}`.
+- [x] Admin can delete any non-live test through `DELETE /api/v1/exams/{exam}`.
+- [x] Examiner can create tests through `POST /api/v1/exams`.
+- [x] Examiner can edit, publish, and toggle instant results only when `exams.created_by` matches the examiner user id.
+- [x] Admin/examiner can create a group through `POST /api/v1/exam-groups`.
+- [x] Admin can manage any group; examiner can manage only groups they created.
+- [x] Admin/examiner can attach an allowed test to a group through `POST /api/v1/exam-groups/{group}/exams`.
+- [x] Admin/examiner can attach a student to a group through `POST /api/v1/exam-groups/{group}/students`.
+- [x] Adding a student to a group registers that student for every current group test.
+- [x] Adding a test to a group registers every current group student for that test.
+- [ ] Add audit logs for group membership, test edits, and deletes before production.
+- [ ] Add richer question editing endpoints for full test editing beyond the current title/duration/starter-question flow.
 
 ### Remaining Before First Local Run
 

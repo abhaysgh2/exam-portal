@@ -250,6 +250,86 @@ class ExamLifecycleTest extends TestCase
         $this->assertDatabaseHas('questions', ['exam_id' => $examId, 'text' => 'What is 2 + 3?']);
     }
 
+    public function test_examiner_can_only_edit_tests_they_created_while_admin_can_edit_any_test(): void
+    {
+        $owner = User::factory()->create(['role' => 'examiner']);
+        $otherExaminer = User::factory()->create(['role' => 'examiner']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $exam = Exam::create([
+            'title' => 'Owned Draft',
+            'created_by' => $owner->id,
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($otherExaminer)
+            ->putJson("/api/v1/exams/{$exam->id}", ['title' => 'Blocked Edit'])
+            ->assertForbidden();
+
+        $this->actingAs($owner)
+            ->putJson("/api/v1/exams/{$exam->id}", ['title' => 'Owner Edit'])
+            ->assertOk()
+            ->assertJsonPath('title', 'Owner Edit');
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/exams/{$exam->id}", ['title' => 'Admin Edit'])
+            ->assertOk()
+            ->assertJsonPath('title', 'Admin Edit');
+    }
+
+    public function test_admin_can_delete_any_non_live_test(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        $exam = Exam::create([
+            'title' => 'Delete Candidate',
+            'created_by' => $examiner->id,
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($admin)
+            ->deleteJson("/api/v1/exams/{$exam->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('exams', ['id' => $exam->id]);
+    }
+
+    public function test_group_assignment_registers_students_for_group_tests(): void
+    {
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        $student = User::factory()->create(['role' => 'student']);
+        $exam = Exam::create([
+            'title' => 'Group Test',
+            'created_by' => $examiner->id,
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'scheduled',
+        ]);
+
+        $groupResponse = $this->actingAs($examiner)
+            ->postJson('/api/v1/exam-groups', ['name' => 'Batch A'])
+            ->assertCreated()
+            ->assertJsonPath('name', 'Batch A');
+
+        $groupId = $groupResponse->json('id');
+
+        $this->actingAs($examiner)
+            ->postJson("/api/v1/exam-groups/{$groupId}/exams", ['exam_id' => $exam->id])
+            ->assertOk();
+
+        $this->actingAs($examiner)
+            ->postJson("/api/v1/exam-groups/{$groupId}/students", ['user_id' => $student->id])
+            ->assertOk()
+            ->assertJsonPath('students.0.email', $student->email);
+
+        $this->assertDatabaseHas('exam_group_exam', ['exam_group_id' => $groupId, 'exam_id' => $exam->id]);
+        $this->assertDatabaseHas('exam_group_user', ['exam_group_id' => $groupId, 'user_id' => $student->id]);
+        $this->assertDatabaseHas('registrations', ['exam_id' => $exam->id, 'user_id' => $student->id]);
+    }
+
     public function test_submit_hides_result_when_instant_results_are_disabled(): void
     {
         [$student, $session, $question, $option] = $this->sessionFixture('manual_release');

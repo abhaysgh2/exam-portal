@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ExamController;
+use App\Http\Controllers\Api\ExamGroupController;
 use App\Http\Controllers\Api\GradingController;
 use App\Http\Controllers\Api\ProctoringController;
 use App\Http\Controllers\Api\ReportController;
@@ -48,6 +49,14 @@ Route::prefix('v1')->group(function (): void {
             Route::get('analytics/exams/{exam}/overview', [AnalyticsController::class, 'examOverview']);
             Route::post('reports/generate', [ReportController::class, 'generate']);
             Route::post('exams/{exam}/publish', [ExamController::class, 'publish']);
+            Route::get('exam-groups', [ExamGroupController::class, 'index']);
+            Route::post('exam-groups', [ExamGroupController::class, 'store']);
+            Route::put('exam-groups/{group}', [ExamGroupController::class, 'update']);
+            Route::delete('exam-groups/{group}', [ExamGroupController::class, 'destroy']);
+            Route::post('exam-groups/{group}/exams', [ExamGroupController::class, 'attachExam']);
+            Route::delete('exam-groups/{group}/exams/{exam}', [ExamGroupController::class, 'detachExam']);
+            Route::post('exam-groups/{group}/students', [ExamGroupController::class, 'attachStudent']);
+            Route::delete('exam-groups/{group}/students/{user}', [ExamGroupController::class, 'detachStudent']);
         });
 
         Route::middleware('role:admin')->group(function (): void {

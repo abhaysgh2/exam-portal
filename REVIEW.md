@@ -6,6 +6,11 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Critical Flow Findings
 
+- [x] Fixed: student exam-page submit should move to the next question until the final question, then show `Save and exit`.
+- [x] Fixed: expired/stale frontend tokens validate against `/me` on app boot and land on login when unauthorized.
+- [x] Fixed: login form does not prefill seeded demo credentials by default.
+- [x] Added: admin can edit/delete any non-live test; examiner can edit/publish/toggle only tests they created.
+- [x] Added: test groups so admin/examiner can attach tests to a group and add students to that group.
 - [x] Student exam attempts have a one-minute post-timer answer-save grace window.
 - [x] Examiner/admin tokens include one-hour expiry and renewal support.
 - [x] Examiner UI has create/publish API support for a basic MCQ test.
@@ -39,6 +44,12 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Functional Checklist
 
+- [x] Add backend tests for admin deleting any non-live test.
+- [x] Add backend tests for examiner edit authorization: own test allowed, other examiner/admin test rejected.
+- [x] Add backend tests for test group creation, exam assignment, student assignment, and automatic registrations.
+- [x] Add frontend tests for final-question-only submit confirmation.
+- [x] Add frontend tests for no default seeded credentials on login.
+- [x] Add frontend tests for stale token `/me` rejection clearing auth.
 - [x] Add tests for token expiry metadata on login/register.
 - [x] Add tests for examiner/admin token renewal and student renewal rejection.
 - [x] Add tests for answer save during the one-minute post-timer grace period.
