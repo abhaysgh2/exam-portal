@@ -48,7 +48,20 @@ class DemoSeeder extends Seeder
                 'show_results_after' => 'submit',
             ],
         );
-        $exam->forceFill(['show_results_after' => 'submit'])->save();
+        $exam->forceFill([
+            'created_by' => $examiner->id,
+            'category' => 'engineering',
+            'description' => 'Seed exam for local API testing.',
+            'duration_minutes' => 60,
+            'total_marks' => 10,
+            'pass_marks' => 4,
+            'start_time' => now()->subMinute(),
+            'end_time' => now()->addHour(),
+            'status' => 'live',
+            'instructions' => 'Answer all questions. Negative marking applies.',
+            'show_results_after' => 'submit',
+            'results_release_at' => null,
+        ])->save();
 
         $section = Section::firstOrCreate(
             ['exam_id' => $exam->id, 'title' => 'General Aptitude'],

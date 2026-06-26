@@ -9,6 +9,7 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Student exam attempts have a one-minute post-timer answer-save grace window.
 - [x] Examiner/admin tokens include one-hour expiry and renewal support.
 - [x] Examiner UI has create/publish API support for a basic MCQ test.
+- [x] Demo seeder refreshes the demo exam live window so the local demo test does not stay expired.
 - [x] Fixed: student exam detail responses no longer expose question content before session start. See `app/Http/Controllers/Api/ExamController.php`.
 - [x] Fixed: only the session owner can save answers or submit a session. Examiner/admin users can still inspect through read endpoints but cannot mutate a candidate attempt.
 - [x] Fixed: submitted, disqualified, or expired sessions reject answer saves.
@@ -44,6 +45,7 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Add tests for answer rejection after the one-minute post-timer grace period.
 - [x] Add API support/tests for examiner creating a basic test with question/options/answer key.
 - [x] Add API support/tests for examiner publishing a test after answer keys exist.
+- [x] Add test that reseeding refreshes the demo exam live window.
 - [x] Student can register for an exam.
 - [x] Unregistered student cannot start a live session.
 - [x] Registered student can start a live session.

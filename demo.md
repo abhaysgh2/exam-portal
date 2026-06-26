@@ -77,6 +77,15 @@ Expected: `result_visible` is `true`, final score is `10.00`, and message is `Yo
 
 To retest this same scenario, run `make fresh` or `make setup-sqlite` because one student can have only one session per exam.
 
+If the browser shows `Exam has ended`, refresh the local demo window and clear the old student attempt:
+
+```bash
+cd "/Users/abhaysingh/Desktop/exam portal"
+make fresh
+```
+
+`make fresh` reseeds `Demo Engineering Aptitude Exam` as live for the next hour.
+
 ## Scenario 3: Examiner Instant Result Toggle
 
 ```bash

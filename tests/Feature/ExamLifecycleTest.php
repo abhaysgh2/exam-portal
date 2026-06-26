@@ -9,6 +9,7 @@ use App\Models\Option;
 use App\Models\Question;
 use App\Models\Registration;
 use App\Models\User;
+use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -54,6 +55,27 @@ class ExamLifecycleTest extends TestCase
             ->postJson('/api/v1/auth/renew')
             ->assertForbidden()
             ->assertJsonPath('message', 'Student sessions cannot be renewed.');
+    }
+
+    public function test_demo_seeder_refreshes_demo_exam_live_window(): void
+    {
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        Exam::create([
+            'title' => 'Demo Engineering Aptitude Exam',
+            'created_by' => $examiner->id,
+            'duration_minutes' => 60,
+            'total_marks' => 10,
+            'status' => 'live',
+            'start_time' => now()->subHours(2),
+            'end_time' => now()->subHour(),
+        ]);
+
+        $this->seed(DemoSeeder::class);
+
+        $exam = Exam::where('title', 'Demo Engineering Aptitude Exam')->firstOrFail();
+        $this->assertSame('live', $exam->status);
+        $this->assertTrue($exam->start_time->lte(now()));
+        $this->assertTrue($exam->end_time->gt(now()));
     }
 
     public function test_student_can_register_for_exam(): void
