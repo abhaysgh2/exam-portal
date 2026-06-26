@@ -6,6 +6,9 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Critical Flow Findings
 
+- [x] Fixed: submitted student attempts show `Submitted`/closed state in the exam list, not a stale `Start` link that opens `Session is already closed`.
+- [x] Added: examiner/admin can add multiple MCQ questions/options to a draft test.
+- [x] Added: examiner/admin can view submitted student answers for an exam.
 - [x] Fixed: student exam-page submit should move to the next question until the final question, then show `Save and exit`.
 - [x] Fixed: expired/stale frontend tokens validate against `/me` on app boot and land on login when unauthorized.
 - [x] Fixed: login form does not prefill seeded demo credentials by default.
@@ -44,6 +47,12 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Functional Checklist
 
+- [x] Add backend tests that student exam list includes own session status after submission.
+- [x] Add backend tests for adding a second MCQ question with options/answer key.
+- [x] Add backend tests for submitted-answer review endpoint.
+- [x] Add frontend tests that submitted exams render `Submitted` instead of `Start`.
+- [x] Add frontend tests for examiner adding another question to a test.
+- [x] Add frontend tests for examiner/admin viewing submitted student answers.
 - [x] Add backend tests for admin deleting any non-live test.
 - [x] Add backend tests for examiner edit authorization: own test allowed, other examiner/admin test rejected.
 - [x] Add backend tests for test group creation, exam assignment, student assignment, and automatic registrations.

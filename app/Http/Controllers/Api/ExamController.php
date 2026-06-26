@@ -20,11 +20,28 @@ class ExamController extends Controller
             ->with('groups:id,name')
             ->when($request->user()->role === 'student', function ($query) use ($request): void {
                 $query->whereHas('registrations', fn ($registrations) => $registrations->where('user_id', $request->user()->id));
+                $query->with(['sessions' => fn ($sessions) => $sessions
+                    ->where('user_id', $request->user()->id)
+                    ->select('id', 'exam_id', 'user_id', 'status', 'submitted_at')]);
             })
             ->when($request->string('status')->toString(), fn ($query, $status) => $query->where('status', $status))
             ->when($request->string('category')->toString(), fn ($query, $category) => $query->where('category', $category))
             ->latest()
             ->paginate($request->integer('limit', 20));
+
+        if ($request->user()->role === 'student') {
+            $exams->getCollection()->transform(function (Exam $exam): Exam {
+                $session = $exam->sessions->first();
+                $exam->setAttribute('current_user_session', $session ? [
+                    'id' => $session->id,
+                    'status' => $session->status,
+                    'submitted_at' => $session->submitted_at,
+                ] : null);
+                $exam->unsetRelation('sessions');
+
+                return $exam;
+            });
+        }
 
         return response()->json($exams);
     }
@@ -137,6 +154,58 @@ class ExamController extends Controller
         $exam->update(['status' => 'scheduled']);
 
         return response()->json($exam->fresh());
+    }
+
+    public function addQuestion(Request $request, Exam $exam)
+    {
+        $this->authorizeExamManagement($request, $exam);
+        abort_if($exam->status !== 'draft', 409, 'Only draft exams can be edited.');
+
+        $data = $this->validatedQuestion($request);
+
+        $question = DB::transaction(function () use ($data, $exam, $request): Question {
+            $section = Section::firstOrCreate(
+                ['exam_id' => $exam->id, 'title' => 'Default Section'],
+                ['order_index' => 1, 'total_questions' => 0],
+            );
+            $orderIndex = $exam->questions()->max('order_index') + 1;
+            $question = Question::create([
+                'exam_id' => $exam->id,
+                'section_id' => $section->id,
+                'type' => $data['type'],
+                'text' => $data['text'],
+                'marks' => $data['marks'],
+                'negative_marks' => $data['negative_marks'] ?? 0,
+                'order_index' => $orderIndex,
+                'created_by' => $request->user()->id,
+            ]);
+
+            foreach ($data['options'] as $index => $option) {
+                Option::create([
+                    'question_id' => $question->id,
+                    'text' => $option['text'],
+                    'is_correct' => (bool) ($option['is_correct'] ?? false),
+                    'order_index' => $index + 1,
+                ]);
+            }
+
+            $section->update(['total_questions' => $exam->questions()->count()]);
+
+            return $question;
+        });
+
+        return response()->json($question->fresh('options'), 201);
+    }
+
+    public function submissions(Exam $exam)
+    {
+        return response()->json(
+            $exam->sessions()
+                ->with('user:id,full_name,email,enrollment_no', 'result', 'answers.question.options')
+                ->whereNotNull('submitted_at')
+                ->latest('submitted_at')
+                ->paginate(),
+        );
     }
 
     public function registerForExam(Request $request, Exam $exam)
@@ -252,6 +321,23 @@ class ExamController extends Controller
         abort_unless(collect($question['options'])->contains('is_correct', true), 422, 'please first upload the answers');
 
         return $question;
+    }
+
+    private function validatedQuestion(Request $request): array
+    {
+        $data = $request->validate([
+            'type' => ['required', Rule::in(['mcq', 'multi_correct'])],
+            'text' => ['required', 'string', 'max:5000'],
+            'marks' => ['required', 'numeric', 'min:0.01'],
+            'negative_marks' => ['nullable', 'numeric', 'min:0'],
+            'options' => ['required', 'array', 'min:2'],
+            'options.*.text' => ['required', 'string', 'max:2000'],
+            'options.*.is_correct' => ['required', 'boolean'],
+        ]);
+
+        abort_unless(collect($data['options'])->contains('is_correct', true), 422, 'please first upload the answers');
+
+        return $data;
     }
 
     private function ensureInstantResultsAreReady(Exam $exam, array $data): void

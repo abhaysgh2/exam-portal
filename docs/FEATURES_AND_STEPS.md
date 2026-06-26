@@ -150,7 +150,10 @@ This keeps the first implementation understandable while preserving clean bounda
 - [x] Added automatic student registration when a student is added to a group with tests.
 - [x] Added automatic student registration when a test is added to a group with students.
 - [x] Added ownership guards so examiners cannot edit another examiner's test.
-- [x] Verified backend with 24 PHPUnit tests and 78 assertions.
+- [x] Verified backend with 27 PHPUnit tests and 92 assertions.
+- [x] Added current student session status to student exam-list responses.
+- [x] Added `/api/v1/exams/{exam}/questions` for adding MCQ/multi-correct questions with options to draft tests.
+- [x] Added `/api/v1/exams/{exam}/submissions` for examiner/admin submitted-answer review.
 
 ## Admin, Examiner, And Group Workflow Memory
 
@@ -165,6 +168,9 @@ This keeps the first implementation understandable while preserving clean bounda
 - [x] Admin/examiner can attach a student to a group through `POST /api/v1/exam-groups/{group}/students`.
 - [x] Adding a student to a group registers that student for every current group test.
 - [x] Adding a test to a group registers every current group student for that test.
+- [x] Student exam list exposes only the current student's own session status, so submitted attempts render as closed without exposing other candidates.
+- [x] Examiner/admin submitted-answer review loads submitted sessions with student identity, result, answers, question text, and selected option ids.
+- [x] Question add flow is draft-only so live tests are not mutated after students can start them.
 - [ ] Add audit logs for group membership, test edits, and deletes before production.
 - [ ] Add richer question editing endpoints for full test editing beyond the current title/duration/starter-question flow.
 

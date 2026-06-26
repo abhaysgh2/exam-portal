@@ -250,6 +250,37 @@ class ExamLifecycleTest extends TestCase
         $this->assertDatabaseHas('questions', ['exam_id' => $examId, 'text' => 'What is 2 + 3?']);
     }
 
+    public function test_examiner_can_add_another_mcq_question_with_options_to_draft_test(): void
+    {
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        $exam = Exam::create([
+            'title' => 'Question Builder',
+            'created_by' => $examiner->id,
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($examiner)
+            ->postJson("/api/v1/exams/{$exam->id}/questions", [
+                'type' => 'mcq',
+                'text' => 'Which number is even?',
+                'marks' => 2,
+                'negative_marks' => 0,
+                'options' => [
+                    ['text' => '3', 'is_correct' => false],
+                    ['text' => '4', 'is_correct' => true],
+                    ['text' => '5', 'is_correct' => false],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('text', 'Which number is even?')
+            ->assertJsonCount(3, 'options');
+
+        $this->assertDatabaseHas('questions', ['exam_id' => $exam->id, 'text' => 'Which number is even?']);
+        $this->assertDatabaseHas('options', ['text' => '4', 'is_correct' => true]);
+    }
+
     public function test_examiner_can_only_edit_tests_they_created_while_admin_can_edit_any_test(): void
     {
         $owner = User::factory()->create(['role' => 'examiner']);
@@ -366,6 +397,42 @@ class ExamLifecycleTest extends TestCase
             ->assertJsonPath('result_visible', true)
             ->assertJsonPath('result.final_score', '10.00')
             ->assertJsonPath('message', 'Your result is ready.');
+    }
+
+    public function test_student_exam_list_marks_submitted_attempts_as_closed(): void
+    {
+        [$student, $session] = $this->sessionFixture('manual_release');
+        $session->update(['submitted_at' => now(), 'status' => 'submitted']);
+
+        $this->actingAs($student)
+            ->getJson('/api/v1/exams')
+            ->assertOk()
+            ->assertJsonPath('data.0.current_user_session.status', 'submitted')
+            ->assertJsonPath('data.0.current_user_session.id', $session->id);
+    }
+
+    public function test_examiner_can_view_submitted_student_answers(): void
+    {
+        [$student, $session, $question, $option] = $this->sessionFixture('manual_release');
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        $session->exam->update(['created_by' => $examiner->id]);
+
+        $this->actingAs($student)
+            ->patchJson("/api/v1/sessions/{$session->id}/answer", [
+                'question_id' => $question->id,
+                'selected_option_id' => $option->id,
+            ])
+            ->assertOk();
+        $this->actingAs($student)
+            ->postJson("/api/v1/sessions/{$session->id}/submit")
+            ->assertOk();
+
+        $this->actingAs($examiner)
+            ->getJson("/api/v1/exams/{$session->exam_id}/submissions")
+            ->assertOk()
+            ->assertJsonPath('data.0.user.email', $student->email)
+            ->assertJsonPath('data.0.answers.0.question.text', 'What is 2 + 2?')
+            ->assertJsonPath('data.0.answers.0.selected_option_id', $option->id);
     }
 
     public function test_answer_can_be_saved_during_one_minute_timer_grace(): void
