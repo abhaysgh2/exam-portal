@@ -24,6 +24,38 @@ class ExamLifecycleTest extends TestCase
             ->assertHeaderMissing('set-cookie');
     }
 
+    public function test_login_returns_expiring_token_metadata(): void
+    {
+        User::factory()->create([
+            'email' => 'student-login@example.com',
+            'password' => 'password123',
+            'role' => 'student',
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'student-login@example.com',
+            'password' => 'password123',
+        ])
+            ->assertOk()
+            ->assertJsonStructure(['access_token', 'token_type', 'expires_at', 'user']);
+    }
+
+    public function test_examiner_can_renew_token_but_student_cannot(): void
+    {
+        $examiner = User::factory()->create(['role' => 'examiner']);
+        $student = User::factory()->create(['role' => 'student']);
+
+        $this->actingAs($examiner)
+            ->postJson('/api/v1/auth/renew')
+            ->assertOk()
+            ->assertJsonStructure(['access_token', 'token_type', 'expires_at', 'user']);
+
+        $this->actingAs($student)
+            ->postJson('/api/v1/auth/renew')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Student sessions cannot be renewed.');
+    }
+
     public function test_student_can_register_for_exam(): void
     {
         $student = User::factory()->create(['role' => 'student']);
@@ -161,6 +193,41 @@ class ExamLifecycleTest extends TestCase
         $this->assertDatabaseHas('exams', ['id' => $exam->id, 'show_results_after' => 'submit']);
     }
 
+    public function test_examiner_can_create_and_publish_basic_mcq_test(): void
+    {
+        $examiner = User::factory()->create(['role' => 'examiner']);
+
+        $response = $this->actingAs($examiner)
+            ->postJson('/api/v1/exams', [
+                'title' => 'UI Created Test',
+                'duration_minutes' => 30,
+                'total_marks' => 5,
+                'pass_marks' => 2,
+                'status' => 'draft',
+                'show_results_after' => 'submit',
+                'starter_question' => [
+                    'text' => 'What is 2 + 3?',
+                    'marks' => 5,
+                    'negative_marks' => 0,
+                    'options' => [
+                        ['text' => '4', 'is_correct' => false],
+                        ['text' => '5', 'is_correct' => true],
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('title', 'UI Created Test');
+
+        $examId = $response->json('id');
+
+        $this->actingAs($examiner)
+            ->postJson("/api/v1/exams/{$examId}/publish")
+            ->assertOk()
+            ->assertJsonPath('status', 'scheduled');
+
+        $this->assertDatabaseHas('questions', ['exam_id' => $examId, 'text' => 'What is 2 + 3?']);
+    }
+
     public function test_submit_hides_result_when_instant_results_are_disabled(): void
     {
         [$student, $session, $question, $option] = $this->sessionFixture('manual_release');
@@ -197,6 +264,33 @@ class ExamLifecycleTest extends TestCase
             ->assertJsonPath('result_visible', true)
             ->assertJsonPath('result.final_score', '10.00')
             ->assertJsonPath('message', 'Your result is ready.');
+    }
+
+    public function test_answer_can_be_saved_during_one_minute_timer_grace(): void
+    {
+        [$student, $session, $question, $option] = $this->sessionFixture('manual_release');
+        $session->forceFill(['started_at' => now()->subSeconds((30 * 60) + 30)])->save();
+
+        $this->actingAs($student)
+            ->patchJson("/api/v1/sessions/{$session->id}/answer", [
+                'question_id' => $question->id,
+                'selected_option_id' => $option->id,
+            ])
+            ->assertOk();
+    }
+
+    public function test_answer_is_rejected_after_one_minute_timer_grace(): void
+    {
+        [$student, $session, $question, $option] = $this->sessionFixture('manual_release');
+        $session->forceFill(['started_at' => now()->subSeconds((30 * 60) + 61)])->save();
+
+        $this->actingAs($student)
+            ->patchJson("/api/v1/sessions/{$session->id}/answer", [
+                'question_id' => $question->id,
+                'selected_option_id' => $option->id,
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Session time has expired.');
     }
 
     private function sessionFixture(string $showResultsAfter): array

@@ -97,7 +97,39 @@ curl -s -X PATCH "http://127.0.0.1:8000/api/v1/exams/$EXAM_ID/instant-results" \
 
 Expected: disabling returns `Instant results disabled.` and enabling returns `Instant results enabled.`
 
-## Scenario 4: Security Checks
+## Scenario 4: Examiner Creates And Publishes A Basic Test
+
+The frontend now exposes this through `Exams -> Create test`. The matching API flow is:
+
+```bash
+NEW_EXAM_ID=$(curl -s -X POST http://127.0.0.1:8000/api/v1/exams \
+  -H "Authorization: Bearer $EXAMINER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title":"Examiner Posted MCQ Test",
+    "duration_minutes":30,
+    "total_marks":1,
+    "pass_marks":1,
+    "status":"draft",
+    "show_results_after":"submit",
+    "starter_question":{
+      "text":"What is 2 + 2?",
+      "marks":1,
+      "negative_marks":0,
+      "options":[
+        {"text":"3","is_correct":false},
+        {"text":"4","is_correct":true}
+      ]
+    }
+  }' | jq -r .id)
+
+curl -s -X POST "http://127.0.0.1:8000/api/v1/exams/$NEW_EXAM_ID/publish" \
+  -H "Authorization: Bearer $EXAMINER_TOKEN" | jq .
+```
+
+Expected: the created test has one MCQ answer key and publish changes the test to `scheduled`.
+
+## Scenario 5: Security Checks
 
 ```bash
 vendor/bin/phpunit

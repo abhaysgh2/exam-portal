@@ -140,7 +140,7 @@ class SecurityExposureTest extends TestCase
         $session = ExamSession::create([
             'exam_id' => $exam->id,
             'user_id' => $student->id,
-            'started_at' => now()->subMinutes(31),
+            'started_at' => now()->subMinutes(32),
             'status' => 'in_progress',
         ]);
 

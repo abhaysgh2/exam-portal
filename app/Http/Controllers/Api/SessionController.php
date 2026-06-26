@@ -43,7 +43,7 @@ class SessionController extends Controller
         );
 
         abort_if($session->submitted_at || $session->status !== 'in_progress', 409, 'Session is already closed.');
-        abort_if($this->timer->remainingSeconds($session) <= 0, 409, 'Session time has expired.');
+        abort_if($this->timer->isPastAnswerGrace($session), 409, 'Session time has expired.');
 
         return response()->json([
             'session_id' => $session->id,
@@ -162,7 +162,7 @@ class SessionController extends Controller
     private function ensureSessionCanAcceptAnswers(ExamSession $session): void
     {
         abort_if($session->submitted_at || $session->status !== 'in_progress', 409, 'Session is already closed.');
-        abort_if($this->timer->remainingSeconds($session) <= 0, 409, 'Session time has expired.');
+        abort_if($this->timer->isPastAnswerGrace($session), 409, 'Session time has expired.');
     }
 
     private function orderedQuestions(Collection $questions, array $order): Collection

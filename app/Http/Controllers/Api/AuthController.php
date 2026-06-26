@@ -25,10 +25,13 @@ class AuthController extends Controller
         $data['role'] = 'student';
 
         $user = User::create($data);
+        $token = $this->issueToken($user);
 
         return response()->json([
             'user' => $user,
-            'access_token' => $user->createToken('api')->plainTextToken,
+            'access_token' => $token['plain_text_token'],
+            'token_type' => 'Bearer',
+            'expires_at' => $token['expires_at'],
         ], 201);
     }
 
@@ -46,17 +49,40 @@ class AuthController extends Controller
         }
 
         $user->forceFill(['last_login_at' => now()])->save();
+        $token = $this->issueToken($user);
 
         return response()->json([
-            'access_token' => $user->createToken('api')->plainTextToken,
+            'access_token' => $token['plain_text_token'],
             'token_type' => 'Bearer',
+            'expires_at' => $token['expires_at'],
             'user' => $user,
+        ]);
+    }
+
+    public function renew(Request $request)
+    {
+        abort_if($request->user()->role === 'student', 403, 'Student sessions cannot be renewed.');
+
+        $currentToken = $request->user()->currentAccessToken();
+        if ($currentToken && method_exists($currentToken, 'delete')) {
+            $currentToken->delete();
+        }
+        $token = $this->issueToken($request->user());
+
+        return response()->json([
+            'access_token' => $token['plain_text_token'],
+            'token_type' => 'Bearer',
+            'expires_at' => $token['expires_at'],
+            'user' => $request->user(),
         ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()?->delete();
+        $currentToken = $request->user()->currentAccessToken();
+        if ($currentToken && method_exists($currentToken, 'delete')) {
+            $currentToken->delete();
+        }
 
         return response()->noContent();
     }
@@ -64,5 +90,16 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return response()->json(['user' => $request->user()]);
+    }
+
+    private function issueToken(User $user): array
+    {
+        $expiresAt = now()->addMinutes($user->role === 'student' ? 65 : 60);
+        $token = $user->createToken('api', ['*'], $expiresAt);
+
+        return [
+            'plain_text_token' => $token->plainTextToken,
+            'expires_at' => $expiresAt->toISOString(),
+        ];
     }
 }

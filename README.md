@@ -8,7 +8,7 @@ Laravel 13 API backend for an enterprise online exam portal based on the provide
 - Backend framework target: Laravel 13.x
 - Local app status: runnable backend API with routes, migrations, models, controllers, middleware, seeders, tests, and local setup commands
 - Verified locally with PHP 8.5.7, Composer 2.10.1, SQLite, and PHPUnit
-- Current test status: `make test` passes with 15 tests and 39 assertions
+- Current test status: `make test` passes with 20 tests and 59 assertions
 - Frontend status: not built yet; this repository is backend/API only
 
 ## Quick Local Setup

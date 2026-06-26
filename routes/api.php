@@ -16,6 +16,7 @@ Route::prefix('v1')->group(function (): void {
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('auth/logout', [AuthController::class, 'logout']);
+        Route::post('auth/renew', [AuthController::class, 'renew'])->middleware('throttle:10,1');
         Route::get('me', [AuthController::class, 'me']);
 
         Route::get('exams', [ExamController::class, 'index']);
@@ -46,10 +47,10 @@ Route::prefix('v1')->group(function (): void {
             Route::put('proctoring/flags/{flag}/action', [ProctoringController::class, 'action']);
             Route::get('analytics/exams/{exam}/overview', [AnalyticsController::class, 'examOverview']);
             Route::post('reports/generate', [ReportController::class, 'generate']);
+            Route::post('exams/{exam}/publish', [ExamController::class, 'publish']);
         });
 
         Route::middleware('role:admin')->group(function (): void {
-            Route::post('exams/{exam}/publish', [ExamController::class, 'publish']);
             Route::delete('exams/{exam}', [ExamController::class, 'destroy']);
             Route::post('exams/{exam}/results/release', [ExamController::class, 'releaseResults']);
             Route::apiResource('users', UserController::class)->except(['create', 'edit']);

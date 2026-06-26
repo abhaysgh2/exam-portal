@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
+use App\Models\Option;
+use App\Models\Question;
 use App\Models\Registration;
+use App\Models\Section;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ExamController extends Controller
@@ -26,7 +30,43 @@ class ExamController extends Controller
         $data = $this->validatedExam($request);
         $data['created_by'] = $request->user()->id;
 
-        return response()->json(Exam::create($data), 201);
+        $questionData = $this->validatedStarterQuestion($request);
+
+        $exam = DB::transaction(function () use ($data, $questionData, $request): Exam {
+            $exam = Exam::create($data);
+
+            if ($questionData) {
+                $section = Section::create([
+                    'exam_id' => $exam->id,
+                    'title' => 'Default Section',
+                    'order_index' => 1,
+                    'total_questions' => 1,
+                ]);
+                $question = Question::create([
+                    'exam_id' => $exam->id,
+                    'section_id' => $section->id,
+                    'type' => 'mcq',
+                    'text' => $questionData['text'],
+                    'marks' => $questionData['marks'],
+                    'negative_marks' => $questionData['negative_marks'] ?? 0,
+                    'order_index' => 1,
+                    'created_by' => $request->user()->id,
+                ]);
+
+                foreach ($questionData['options'] as $index => $option) {
+                    Option::create([
+                        'question_id' => $question->id,
+                        'text' => $option['text'],
+                        'is_correct' => (bool) ($option['is_correct'] ?? false),
+                        'order_index' => $index + 1,
+                    ]);
+                }
+            }
+
+            return $exam;
+        });
+
+        return response()->json($exam->fresh('sections', 'questions.options'), 201);
     }
 
     public function show(Request $request, Exam $exam)
@@ -176,6 +216,28 @@ class ExamController extends Controller
             'show_results_after' => ['nullable', Rule::in(['submit', 'manual_release', 'schedule'])],
             'results_release_at' => ['nullable', 'date'],
         ]);
+    }
+
+    private function validatedStarterQuestion(Request $request): ?array
+    {
+        if (! $request->has('starter_question')) {
+            return null;
+        }
+
+        $data = $request->validate([
+            'starter_question.text' => ['required', 'string', 'max:5000'],
+            'starter_question.marks' => ['required', 'numeric', 'min:0.01'],
+            'starter_question.negative_marks' => ['nullable', 'numeric', 'min:0'],
+            'starter_question.options' => ['required', 'array', 'min:2'],
+            'starter_question.options.*.text' => ['required', 'string', 'max:2000'],
+            'starter_question.options.*.is_correct' => ['required', 'boolean'],
+        ]);
+
+        $question = $data['starter_question'];
+
+        abort_unless(collect($question['options'])->contains('is_correct', true), 422, 'please first upload the answers');
+
+        return $question;
     }
 
     private function ensureInstantResultsAreReady(Exam $exam, array $data): void

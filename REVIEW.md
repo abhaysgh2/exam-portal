@@ -6,6 +6,9 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Critical Flow Findings
 
+- [x] Student exam attempts have a one-minute post-timer answer-save grace window.
+- [x] Examiner/admin tokens include one-hour expiry and renewal support.
+- [x] Examiner UI has create/publish API support for a basic MCQ test.
 - [x] Fixed: student exam detail responses no longer expose question content before session start. See `app/Http/Controllers/Api/ExamController.php`.
 - [x] Fixed: only the session owner can save answers or submit a session. Examiner/admin users can still inspect through read endpoints but cannot mutate a candidate attempt.
 - [x] Fixed: submitted, disqualified, or expired sessions reject answer saves.
@@ -18,6 +21,7 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Security Checklist
 
+- [x] Verify role-aware token expiry metadata is returned and frontend localStorage cleanup is implemented.
 - [x] Public registration cannot self-assign admin/examiner roles.
 - [x] User password and remember token are hidden from JSON responses.
 - [x] Option `is_correct` and NAT `correct_value`/`tolerance` are hidden by model serialization.
@@ -34,6 +38,12 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ## Functional Checklist
 
+- [x] Add tests for token expiry metadata on login/register.
+- [x] Add tests for examiner/admin token renewal and student renewal rejection.
+- [x] Add tests for answer save during the one-minute post-timer grace period.
+- [x] Add tests for answer rejection after the one-minute post-timer grace period.
+- [x] Add API support/tests for examiner creating a basic test with question/options/answer key.
+- [x] Add API support/tests for examiner publishing a test after answer keys exist.
 - [x] Student can register for an exam.
 - [x] Unregistered student cannot start a live session.
 - [x] Registered student can start a live session.
