@@ -16,6 +16,14 @@ class ExamLifecycleTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_health_endpoint_returns_json(): void
+    {
+        $this->getJson('/health')
+            ->assertOk()
+            ->assertJsonPath('status', 'ok')
+            ->assertHeaderMissing('set-cookie');
+    }
+
     public function test_student_can_register_for_exam(): void
     {
         $student = User::factory()->create(['role' => 'student']);
@@ -65,6 +73,41 @@ class ExamLifecycleTest extends TestCase
             ->postJson('/api/v1/sessions/start', ['exam_id' => $exam->id])
             ->assertCreated()
             ->assertJsonStructure(['session_id', 'questions', 'sections', 'time_remaining_sec', 'server_time']);
+    }
+
+    public function test_student_cannot_register_for_draft_exam(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $exam = Exam::create([
+            'title' => 'Draft Registration Block',
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($student)
+            ->postJson("/api/v1/exams/{$exam->id}/register")
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Registration is only open for scheduled or live exams.');
+    }
+
+    public function test_student_cannot_start_live_exam_before_start_time(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $exam = Exam::create([
+            'title' => 'Future Live Exam',
+            'duration_minutes' => 30,
+            'total_marks' => 10,
+            'status' => 'live',
+            'start_time' => now()->addHour(),
+            'end_time' => now()->addHours(2),
+        ]);
+        Registration::create(['exam_id' => $exam->id, 'user_id' => $student->id]);
+
+        $this->actingAs($student)
+            ->postJson('/api/v1/sessions/start', ['exam_id' => $exam->id])
+            ->assertStatus(400)
+            ->assertJsonPath('message', 'Exam has not started.');
     }
 
     public function test_examiner_cannot_enable_instant_results_without_answer_keys(): void

@@ -11,8 +11,8 @@ use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
-    Route::post('auth/register', [AuthController::class, 'register']);
-    Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -24,13 +24,13 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('exams/{exam}/register', [ExamController::class, 'withdraw'])->middleware('role:student,admin');
         Route::get('my/registrations', [ExamController::class, 'myRegistrations']);
 
-        Route::post('sessions/start', [SessionController::class, 'start'])->middleware('role:student,admin');
+        Route::post('sessions/start', [SessionController::class, 'start'])->middleware(['role:student,admin', 'throttle:30,1']);
         Route::get('sessions/{session}', [SessionController::class, 'show']);
-        Route::patch('sessions/{session}/answer', [SessionController::class, 'answer']);
+        Route::patch('sessions/{session}/answer', [SessionController::class, 'answer'])->middleware('throttle:120,1');
         Route::post('sessions/{session}/submit', [SessionController::class, 'submit']);
         Route::get('sessions/{session}/summary', [SessionController::class, 'summary']);
 
-        Route::post('proctoring/flag', [ProctoringController::class, 'store']);
+        Route::post('proctoring/flag', [ProctoringController::class, 'store'])->middleware('throttle:120,1');
 
         Route::middleware('role:examiner,admin')->group(function (): void {
             Route::post('exams', [ExamController::class, 'store']);

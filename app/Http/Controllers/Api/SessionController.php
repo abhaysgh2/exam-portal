@@ -23,6 +23,8 @@ class SessionController extends Controller
         $exam = Exam::with('questions.options', 'sections')->findOrFail($data['exam_id']);
 
         abort_unless($exam->status === 'live', 400, 'Exam is not live.');
+        abort_if($exam->start_time && now()->lt($exam->start_time), 400, 'Exam has not started.');
+        abort_if($exam->end_time && now()->gt($exam->end_time), 400, 'Exam has ended.');
         abort_unless($exam->registrations()->where('user_id', $request->user()->id)->exists(), 403, 'You are not registered for this exam.');
 
         $questions = $exam->questions;

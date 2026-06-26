@@ -13,6 +13,7 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Fixed: final submit returns either a hidden-result submitted message or an instant-result payload based on the exam setting.
 - [x] Added examiner/admin instant-result toggle endpoint with answer-key validation.
 - [x] Added publishing guard so instant-result exams cannot publish until objective answer keys exist.
+- [x] Fixed: `/health` now returns JSON without session/XSRF cookies for load balancer checks.
 - [x] Added regression tests for pre-session question exposure, cross-exam answer injection, examiner mutation attempts, and expired answer saves.
 
 ## Security Checklist
@@ -25,8 +26,9 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Non-owner users cannot save or submit a student session.
 - [x] Instant-result enablement rejects exams without answer keys using `please first upload the answers`.
 - [x] Descriptive questions are blocked from instant-result enablement because they require manual grading.
+- [x] Login, register, session start, answer save, and proctoring flag endpoints have starter throttles.
 - [ ] Move browser auth from bearer tokens in localStorage to secure HTTP-only cookies before production.
-- [ ] Add rate limiting to login, register, answer save, and proctoring flag endpoints.
+- [x] Add rate limiting to login, register, answer save, and proctoring flag endpoints.
 - [ ] Add audit logging for admin user changes, exam publish/release actions, grading actions, and disqualification actions.
 - [ ] Add explicit authorization policies instead of controller-local role checks as the app grows.
 
@@ -39,14 +41,16 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] Session submit grades through `GradingService`.
 - [x] Session submit hides result when `show_results_after` is `manual_release`.
 - [x] Session submit returns result details when `show_results_after` is `submit`.
+- [x] Students cannot register for draft/completed/archived exams.
+- [x] Live sessions cannot start before `start_time` or after `end_time`.
 - [ ] Add tests for MCQ correct/wrong scoring.
 - [ ] Add tests for multi-correct scoring.
 - [ ] Add tests for NAT tolerance scoring.
 - [ ] Add tests for descriptive manual grading and result recompute.
 - [ ] Add tests for result release visibility.
 - [ ] Add tests for proctoring flag action workflow.
-- [ ] Implement scheduled start/end-time enforcement, not only `status === live`.
-- [ ] Decide whether students may register for draft/completed exams; currently capacity is checked but lifecycle status is not.
+- [x] Implement scheduled start/end-time enforcement, not only `status === live`.
+- [x] Decide whether students may register for draft/completed exams; registration is restricted to scheduled/live exams.
 
 ## API Contract Checklist
 
@@ -56,6 +60,7 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 - [x] `/api/v1/sessions/{session}/answer` accepts MCQ, multi-correct, NAT, and descriptive answer payloads.
 - [x] `/api/v1/sessions/{session}/submit` returns submit status, result visibility, user-facing message, and result data only when visible.
 - [x] `/api/v1/exams/{exam}/instant-results` toggles instant result visibility for examiner/admin users.
+- [x] `/health` returns JSON status and does not emit session cookies.
 - [ ] Add dedicated response resources/DTOs so API output does not depend on raw Eloquent serialization.
 - [ ] Add OpenAPI documentation or a checked-in API contract for frontend/backend alignment.
 - [ ] Standardize error response bodies for `403`, `409`, and `422` cases.
@@ -64,8 +69,16 @@ Scope: Laravel API auth, exam discovery, session start, answer save, submit, pro
 
 ```bash
 vendor/bin/phpunit
-vendor/bin/pint --test app/Http/Controllers/Api/ExamController.php app/Http/Controllers/Api/SessionController.php app/Models/Result.php database/migrations/2026_06_25_000002_create_exams_table.php database/seeders/DemoSeeder.php tests/Feature/ExamLifecycleTest.php routes/api.php
+vendor/bin/pint --test
 ```
+
+## Live Smoke Test
+
+- [x] `php artisan migrate:fresh --seed` rebuilt local SQLite demo data.
+- [x] Laravel served on `http://127.0.0.1:18080`.
+- [x] Student login, exam list, session start, MCQ save, NAT save, submit, and instant result response were verified with curl.
+- [x] Examiner login and instant-results toggle were verified with curl.
+- [x] `/health` returned JSON without `Set-Cookie`.
 
 ## Next Recommended Work
 

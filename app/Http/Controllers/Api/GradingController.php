@@ -9,9 +9,7 @@ use Illuminate\Http\Request;
 
 class GradingController extends Controller
 {
-    public function __construct(private GradingService $grading)
-    {
-    }
+    public function __construct(private GradingService $grading) {}
 
     public function queue()
     {

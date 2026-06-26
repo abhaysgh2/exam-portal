@@ -193,7 +193,7 @@ Files:
 
 ## Remaining Security Recommendations
 
-- [ ] Add Laravel rate limiting for auth, exam start, answer save, and proctoring endpoints.
+- [x] Add Laravel rate limiting for auth, exam start, answer save, and proctoring endpoints.
 - [ ] Add policies for exam ownership, result visibility, and grading authority.
 - [ ] Split student exam payloads from examiner/admin payloads with API Resources.
 - [ ] Add result endpoints that enforce ownership and release policy.
@@ -234,4 +234,4 @@ vendor/bin/pint --test
 
 ## Final Audit Judgment
 
-The repository is **safer after this audit**, and the highest-risk scaffold leaks found in static review were patched. However, it is **not yet fully scenario-covered** and should not be treated as production-ready until PHP/Composer are installed, dependencies are resolved, the expanded feature tests are implemented, and the suite passes in CI.
+The repository is **safer after this audit**, and the highest-risk scaffold leaks found in static review were patched. The local suite now passes, but production launch still needs CI, infrastructure secrets management, observability, and expanded E2E coverage.

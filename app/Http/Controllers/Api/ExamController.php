@@ -92,6 +92,8 @@ class ExamController extends Controller
 
     public function registerForExam(Request $request, Exam $exam)
     {
+        abort_unless(in_array($exam->status, ['scheduled', 'live'], true), 409, 'Registration is only open for scheduled or live exams.');
+        abort_if($exam->end_time && now()->gt($exam->end_time), 409, 'Registration is closed for this exam.');
         abort_if($exam->registrations()->count() >= $exam->max_candidates, 409, 'Exam capacity reached.');
 
         $registration = Registration::firstOrCreate(

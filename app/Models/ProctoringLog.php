@@ -10,6 +10,7 @@ class ProctoringLog extends Model
     use HasUuids;
 
     public const CREATED_AT = 'logged_at';
+
     public const UPDATED_AT = null;
 
     protected $fillable = ['session_id', 'event_type', 'severity', 'details', 'screenshot_url', 'action', 'action_note'];
